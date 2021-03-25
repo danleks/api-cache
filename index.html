@@ -20,6 +20,12 @@
 			width: 88%;
 		}
 
+		.data-status {
+			padding: 20px;
+			margin-top: 20px;
+			background-color: rgb(253, 243, 224);
+		}
+
 		.articles {
 			display: grid;
 			gap: 30px;
@@ -45,6 +51,7 @@
 
 	<h1>API Cache</h1>
 	<p><em><strong>The Scuttlebutt</strong>&mdash;the number one source for pirate news!</em></p>
+	<div class="data-status">API data is<span> up-to-date ✔️</span></div>
 
 	<div id="app">
 		Loading...
@@ -56,6 +63,7 @@
         
 		const createAPICache = (options) => {
 			const app = document.querySelector('#app');
+			const dataStatus = document.querySelector('.data-status span')
 
 			const defaults = {
 				apiLink: 'https://vanillajsacademy.com/api/pirates.json',
@@ -124,6 +132,11 @@
 						})
 				}
 			};
+
+			let timerId = setTimeout(() => {
+				dataStatus.innerHTML = ' out-dated ❌. <br /> Super intelegent AI recommends to refresh the page 🤖';
+				clearTimeout(timerId);
+			}, settings.dataValidity);
 
 			handleData();
 		};
