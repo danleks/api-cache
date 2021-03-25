@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>API Cache</title>
+
+	<style type="text/css">
+
+		html {
+			box-sizing: border-box;
+		}
+
+		*, *:before, *:after {
+			box-sizing: inherit;
+			padding: 0;
+			margin: 0;
+		}
+		body {
+			margin: 1em auto;
+			max-width: 40em;
+			width: 88%;
+		}
+
+		.articles {
+			display: grid;
+			gap: 30px;
+			margin-top: 50px;
+		}
+
+		.article__header {
+			margin-bottom: 20px;
+		}
+		.article__category {
+			display: inline-block;
+			padding: 3px 5px;
+			border-radius: 2px;
+			margin-top: 5px;
+			font-size: 12px;
+			background-color: rgb(226, 226, 226);
+			color: black;
+
+		}
+	</style>
+</head>
+<body>
+
+	<h1>API Cache</h1>
+	<p><em><strong>The Scuttlebutt</strong>&mdash;the number one source for pirate news!</em></p>
+
+	<div id="app">
+		Loading...
+	</div>
+
+	<script>
+		const thirtySeconds = 1000 * 30;
+		const fiveMinutes = 1000 * 60 * 5;
+        
+		const createAPICache = (options) => {
+			const app = document.querySelector('#app');
+
+			const defaults = {
+				apiLink: 'https://vanillajsacademy.com/api/pirates.json',
+				dataValidity: 1000*60,
+			};
+
+			const settings = Object.assign(defaults, options);
+
+			const isDataValid = (saved, goodFor) => {
+				// Check that there's data and a timestamp key
+				if(!saved || !saved.data || !saved.timestamp) return false;
+
+				// get the difference between the timestamp and current time
+				let difference = new Date().getTime() - saved.timestamp;
+
+				return difference < goodFor;				
+			};
+
+			const saveDataToLocalStorage = (data) => {
+				localStorage.setItem('data', JSON.stringify({data, timestamp: new Date().getTime()}))
+			};
+
+			const renderData = ({ articles }) => {
+				console.log(articles);
+				app.innerHTML = `
+					<div class="articles">
+						${articles.map(({ title, author, article, pubdate, category }) => {
+							return `
+							<article class="article">
+								<header class="article__header">
+									<h2 class="article__title">${title}</h2>
+									<address>
+										<span rel="author">${author}</span>
+										<time datetime=${pubdate}>${pubdate}</time>
+									</address>
+									<span class="article__category">${category}</span>
+								</header>
+								<div>
+									<p>${article}</p>
+								</div>
+							</article>
+							`
+						}).join('')}
+					</div>
+				`;
+			}
+
+			const handleData = () => {
+				const saved = JSON.parse(localStorage.getItem('data'));
+				console.log(saved);
+
+				if (saved && isDataValid(saved, settings.dataValidity)) {
+					console.log('still good!');
+					renderData(saved.data);
+				} else {
+					fetch(settings.apiLink)
+						.then(response => {
+							if (response.ok) {
+								return response.json();
+							} else {
+								Promise.reject(response);
+							}
+						})
+						.then(data => {
+							console.log('fetched new data');
+							saveDataToLocalStorage(data);
+							renderData(data);
+						})
+				}
+			};
+
+			handleData();
+		};
+
+		createAPICache({
+			dataValidity: thirtySeconds
+		})
+	</script>
+</body>
+</html>
