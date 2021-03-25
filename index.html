@@ -79,7 +79,6 @@
 			};
 
 			const renderData = ({ articles }) => {
-				console.log(articles);
 				app.innerHTML = `
 					<div class="articles">
 						${articles.map(({ title, author, article, pubdate, category }) => {
@@ -105,7 +104,6 @@
 
 			const handleData = () => {
 				const saved = JSON.parse(localStorage.getItem('data'));
-				console.log(saved);
 
 				if (saved && isDataValid(saved, settings.dataValidity)) {
 					console.log('still good!');
