@@ -43,7 +43,33 @@
 			font-size: 12px;
 			background-color: rgb(226, 226, 226);
 			color: black;
-
+		}
+		.emptyState {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			gap: 40px;
+			height: 600px;
+			width: 600px;
+			transform: translate(-50%, -50%);
+		}
+		.emptyState__title {
+			font-size: 20px;
+			font-weight: normal;
+			text-align: center;
+			color: rgb(119, 119, 119);
+		}
+		.emptyState__bg {
+			height: 200px;
+			width: 400px;
+			background-image: url('./assets//empty.svg');
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: 50%;
 		}
 	</style>
 </head>
@@ -51,13 +77,15 @@
 
 	<h1>API Cache</h1>
 	<p><em><strong>The Scuttlebutt</strong>&mdash;the number one source for pirate news!</em></p>
-	<div class="data-status">API data is<span> up-to-date ✔️</span></div>
+	<!-- <div class="data-status">API data is<span> up-to-date ✔️</span></div> -->
 
 	<div id="app">
 		Loading...
 	</div>
 
 	<script>
+
+		const fiveSeconds = 1000 * 5;
 		const thirtySeconds = 1000 * 30;
 		const fiveMinutes = 1000 * 60 * 5;
         
@@ -66,11 +94,23 @@
 			const dataStatus = document.querySelector('.data-status span')
 
 			const defaults = {
-				apiLink: 'https://vanillajsacademy.com/api/pirates.json',
+				apiLink: getEndpoint(),
 				dataValidity: 1000*60,
+				storageID: 'data',
 			};
 
 			const settings = Object.assign(defaults, options);
+
+			/**
+			 * Dynamically vary the API endpoint
+			 * @return {String} The API endpoint
+			 */
+			function getEndpoint () {
+				var endpoint = 'https://vanillajsacademy.com/api/';
+				var random = Math.random();
+				if (random < 0.5) return endpoint + 'pirates.json';
+				return endpoint + 'fail.json';
+			};
 
 			const isDataValid = (saved, goodFor) => {
 				// Check that there's data and a timestamp key
@@ -83,7 +123,30 @@
 			};
 
 			const saveDataToLocalStorage = (data) => {
-				localStorage.setItem('data', JSON.stringify({data, timestamp: new Date().getTime()}))
+				localStorage.setItem(settings.storageID, JSON.stringify({data, timestamp: new Date().getTime()}))
+			};
+
+			const getUpToDateData = (boolean) => {
+				const saved = JSON.parse(localStorage.getItem(settings.storageID));
+				if (!saved) return;
+
+				if (boolean) {
+					if (isDataValid(saved, settings.dataValidity)) {
+						return saved.data;
+					}
+				} else {
+					return saved.data;
+				}
+				
+			};
+
+			const renderNoData = () => {
+				app.innerHTML = `
+					<div class="emptyState">
+						<h1 class="emptyState__title">Ooops... Try reloading the page.</h1>
+						<div class="emptyState__bg"></div>
+					</div>
+				`;
 			};
 
 			const renderData = ({ articles }) => {
@@ -111,38 +174,48 @@
 			}
 
 			const handleData = () => {
-				const saved = JSON.parse(localStorage.getItem('data'));
+				let upToDateData = getUpToDateData(true);	
 
-				if (saved && isDataValid(saved, settings.dataValidity)) {
-					console.log('still good!');
-					renderData(saved.data);
-				} else {
-					fetch(settings.apiLink)
-						.then(response => {
-							if (response.ok) {
-								return response.json();
-							} else {
-								Promise.reject(response);
-							}
-						})
-						.then(data => {
-							console.log('fetched new data');
-							saveDataToLocalStorage(data);
-							renderData(data);
-						})
-				}
+				if (upToDateData) {
+					console.log('cached data');
+					renderData(upToDateData);
+					return;
+				} 
+
+				fetch(settings.apiLink)
+					.then(response => {
+						if (response.ok) {
+							return response.json();
+						} else {
+							Promise.reject(response);
+						}
+					})
+					.then(data => {
+						console.log('fetched new data');
+						renderData(data);
+						saveDataToLocalStorage(data);
+					})
+					.catch(error => {
+						let outDatedData = getUpToDateData(false);
+						if (outDatedData) {
+							console.log('hey, there is some saved data');
+							renderData(outDatedData);
+						} else {
+							renderNoData();
+						}
+					})
 			};
 
-			let timerId = setTimeout(() => {
-				dataStatus.innerHTML = ' out-dated ❌. <br /> Super intelegent AI recommends to refresh the page 🤖';
-				clearTimeout(timerId);
-			}, settings.dataValidity);
+			// let timerId = setTimeout(() => {
+			// 	dataStatus.innerHTML = ' out-dated ❌. <br /> Super intelegent AI recommends to refresh the page 🤖';
+			// 	clearTimeout(timerId);
+			// }, settings.dataValidity);
 
 			handleData();
 		};
 
 		createAPICache({
-			dataValidity: thirtySeconds
+			dataValidity: fiveSeconds
 		})
 	</script>
 </body>
