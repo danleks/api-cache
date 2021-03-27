@@ -77,7 +77,7 @@
 
 	<h1>API Cache</h1>
 	<p><em><strong>The Scuttlebutt</strong>&mdash;the number one source for pirate news!</em></p>
-	<!-- <div class="data-status">API data is<span> up-to-date ✔️</span></div> -->
+	<div class="data-status">Fetching API data...</div>
 
 	<div id="app">
 		Loading...
@@ -91,7 +91,7 @@
         
 		const createAPICache = (options) => {
 			const app = document.querySelector('#app');
-			const dataStatus = document.querySelector('.data-status span')
+			const dataStatus = document.querySelector('.data-status')
 
 			const defaults = {
 				apiLink: getEndpoint(),
@@ -149,6 +149,10 @@
 				`;
 			};
 
+			const renderDataStatus = (string) => {
+				dataStatus.innerHTML = `API data is ${string}.`;
+			}
+
 			const renderData = ({ articles }) => {
 				app.innerHTML = `
 					<div class="articles">
@@ -179,6 +183,7 @@
 				if (upToDateData) {
 					console.log('cached data');
 					renderData(upToDateData);
+					renderDataStatus('cached');
 					return;
 				} 
 
@@ -193,23 +198,24 @@
 					.then(data => {
 						console.log('fetched new data');
 						renderData(data);
+						renderDataStatus('up-to-date');
 						saveDataToLocalStorage(data);
 					})
 					.catch(error => {
 						let outDatedData = getUpToDateData(false);
 						if (outDatedData) {
-							console.log('hey, there is some saved data');
 							renderData(outDatedData);
+							renderDataStatus('out-dated.');
 						} else {
 							renderNoData();
 						}
 					})
 			};
 
-			// let timerId = setTimeout(() => {
-			// 	dataStatus.innerHTML = ' out-dated ❌. <br /> Super intelegent AI recommends to refresh the page 🤖';
-			// 	clearTimeout(timerId);
-			// }, settings.dataValidity);
+			let timerId = setTimeout(() => {
+				renderDataStatus('out-dated');
+				clearTimeout(timerId);
+			}, settings.dataValidity);
 
 			handleData();
 		};
